@@ -11,7 +11,7 @@ namespace InternetSeparationAdapter
   {
     public static void Main(string[] args)
     {
-      using (var client = new ImapClient(new ProtocolLogger("imap.log")))
+      using (var client = new ImapClient(new ProtocolLogger(Console.OpenStandardError())))
       {
         client.Connect("imap.gmail.com", 993, true);
 
@@ -79,24 +79,29 @@ namespace InternetSeparationAdapter
           Console.WriteLine($"{folder}: flags for message {e.Index} have changed to: {e.Flags}.");
         };
 
-        Console.WriteLine("Hit any key to end the IDLE loop.");
-        using (var done = new CancellationTokenSource())
-        {
-          var task = IdleTask(client, done.Token);
 
-          Console.ReadKey();
-          done.Cancel();
-          task.Wait();
+        using (var exit = new CancellationTokenSource())
+        {
+          var cancellationTask = Task.Run(() =>
+          {
+            Console.WriteLine("Hit any key to end the IDLE loop.");
+            Console.ReadKey();
+            exit.Cancel();
+          });
+
+          while (!exit.IsCancellationRequested)
+          {
+            using (var done = new CancellationTokenSource())
+            {
+              using (exit.Token.Register(() => done.Cancel()))
+              {
+                var task = IdleTask(client, done.Token);
+                task.Wait();
+              }
+            }
+          }
         }
 
-        if (client.Inbox.Count > messages.Count)
-        {
-          Console.WriteLine("The new messages that arrived during IDLE are:");
-          foreach (
-            var message in
-            client.Inbox.Fetch(messages.Count, -1, MessageSummaryItems.Full | MessageSummaryItems.UniqueId))
-            Console.WriteLine("Subject: {0}", message.Envelope.Subject);
-        }
 
         client.Disconnect(true);
       }
@@ -140,7 +145,8 @@ namespace InternetSeparationAdapter
       /// Check whether or not either of the CancellationToken's have been cancelled.
       /// </summary>
       /// <value><c>true</c> if cancellation was requested; otherwise, <c>false</c>.</value>
-      public bool IsCancellationRequested => CancellationToken.IsCancellationRequested || DoneToken.IsCancellationRequested;
+      public bool IsCancellationRequested
+        => CancellationToken.IsCancellationRequested || DoneToken.IsCancellationRequested;
 
       /// <summary>
       /// Initializes a new instance of the <see cref="IdleState"/> class.
@@ -200,7 +206,7 @@ namespace InternetSeparationAdapter
           // For GMail, we use a 9 minute interval because they do not seem to keep the connection alive for more than ~10 minutes.
           while (!idle.IsCancellationRequested)
           {
-            using (var timeout = new CancellationTokenSource(new TimeSpan(0, 9, 0)))
+            using (var timeout = new CancellationTokenSource(new TimeSpan(0, 0, 10)))
             {
               try
               {
