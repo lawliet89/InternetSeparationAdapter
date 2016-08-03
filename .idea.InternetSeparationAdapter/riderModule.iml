@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module type="RIDER_MODULE" version="4">
+  <component name="NewModuleRootManager">
+    <content url="file://$USER_HOME$/.local/share/JetBrains/Shared/v06/DecompilerCache/decompiler/7D1369AB-17FD-4494-B57B-DE10AD8AAF1D/26/be983ef8/Pop3Client.cs">
+      <sourceFolder url="file://$USER_HOME$/.local/share/JetBrains/Shared/v06/DecompilerCache/decompiler/7D1369AB-17FD-4494-B57B-DE10AD8AAF1D/26/be983ef8/Pop3Client.cs" isTestSource="false" />
+    </content>
+    <content url="file://$USER_HOME$/.local/share/JetBrains/Shared/v06/DecompilerCache/decompiler/919B514A-6DC4-41D6-9E1A-A050BC81B97F/00/e87b813c/ImapClient.cs">
+      <sourceFolder url="file://$USER_HOME$/.local/share/JetBrains/Shared/v06/DecompilerCache/decompiler/919B514A-6DC4-41D6-9E1A-A050BC81B97F/00/e87b813c/ImapClient.cs" isTestSource="false" />
+    </content>
+    <content url="file://$USER_HOME$/.local/share/JetBrains/Shared/v06/DecompilerCache/decompiler/919B514A-6DC4-41D6-9E1A-A050BC81B97F/42/8f80a48e/MessageFlagsChangedEventArgs.cs">
+      <sourceFolder url="file://$USER_HOME$/.local/share/JetBrains/Shared/v06/DecompilerCache/decompiler/919B514A-6DC4-41D6-9E1A-A050BC81B97F/42/8f80a48e/MessageFlagsChangedEventArgs.cs" isTestSource="false" />
+    </content>
+    <content url="file://$USER_HOME$/.local/share/JetBrains/Shared/v06/DecompilerCache/decompiler/919B514A-6DC4-41D6-9E1A-A050BC81B97F/8a/f0ca8b68/IProtocolLogger.cs">
+      <sourceFolder url="file://$USER_HOME$/.local/share/JetBrains/Shared/v06/DecompilerCache/decompiler/919B514A-6DC4-41D6-9E1A-A050BC81B97F/8a/f0ca8b68/IProtocolLogger.cs" isTestSource="false" />
+    </content>
+    <content url="file://$USER_HOME$/.local/share/JetBrains/Shared/v06/DecompilerCache/decompiler/919B514A-6DC4-41D6-9E1A-A050BC81B97F/f9/0640954a/MessageFlags.cs">
+      <sourceFolder url="file://$USER_HOME$/.local/share/JetBrains/Shared/v06/DecompilerCache/decompiler/919B514A-6DC4-41D6-9E1A-A050BC81B97F/f9/0640954a/MessageFlags.cs" isTestSource="false" />
+    </content>
+    <content url="file://$MODULE_DIR$/..">
+      <sourceFolder url="file://$MODULE_DIR$/.." isTestSource="false" />
+    </content>
+    <orderEntry type="sourceFolder" forTests="false" />
+  </component>
+</module>
