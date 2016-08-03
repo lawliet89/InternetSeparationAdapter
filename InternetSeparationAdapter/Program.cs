@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 using MailKit;
 using MailKit.Net.Imap;
 
@@ -81,14 +82,11 @@ namespace InternetSeparationAdapter
         Console.WriteLine("Hit any key to end the IDLE loop.");
         using (var done = new CancellationTokenSource())
         {
-          // Note: when the 'done' CancellationTokenSource is cancelled, it ends to IDLE loop.
-          var thread = new Thread(IdleLoop);
-
-          thread.Start(new IdleState(client, done.Token));
+          var task = IdleTask(client, done.Token);
 
           Console.ReadKey();
           done.Cancel();
-          thread.Join();
+          task.Wait();
         }
 
         if (client.Inbox.Count > messages.Count)
@@ -125,8 +123,8 @@ namespace InternetSeparationAdapter
       /// Get the done token.
       /// </summary>
       /// <remarks>
-      /// <para>The done token tells the <see cref="Program.IdleLoop"/> that the user has requested to end the loop.</para>
-      /// <para>When the done token is cancelled, the <see cref="Program.IdleLoop"/> will gracefully come to an end by
+      /// <para>The done token tells the <see cref="Program.IdleTask"/> that the user has requested to end the loop.</para>
+      /// <para>When the done token is cancelled, the <see cref="Program.IdleTask"/> will gracefully come to an end by
       /// cancelling the timeout and then breaking out of the loop.</para>
       /// </remarks>
       /// <value>The done token.</value>
@@ -192,68 +190,71 @@ namespace InternetSeparationAdapter
       }
     }
 
-    static void IdleLoop(object state)
+    static Task IdleTask(ImapClient client, CancellationToken doneToken,
+      CancellationToken cancellationToken = default(CancellationToken))
     {
-      var idle = (IdleState) state;
-
-      lock (idle.Client.SyncRoot)
+      var idle = new IdleState(client, doneToken, cancellationToken);
+      return Task.Run(() =>
       {
-        // Note: since the IMAP server will drop the connection after 30 minutes, we must loop sending IDLE commands that
-        // last ~29 minutes or until the user has requested that they do not want to IDLE anymore.
-        //
-        // For GMail, we use a 9 minute interval because they do not seem to keep the connection alive for more than ~10 minutes.
-        while (!idle.IsCancellationRequested)
+        lock (idle.Client.SyncRoot)
         {
-          // Note: Starting with .NET 4.5, you can make this simpler by using the CancellationTokenSource .ctor that
-          // takes a TimeSpan argument, thus eliminating the need to create a timer.
-          using (var timeout = new CancellationTokenSource(new TimeSpan(0, 9, 0)))
+          // Note: since the IMAP server will drop the connection after 30 minutes, we must loop sending IDLE commands that
+          // last ~29 minutes or until the user has requested that they do not want to IDLE anymore.
+          //
+          // For GMail, we use a 9 minute interval because they do not seem to keep the connection alive for more than ~10 minutes.
+          while (!idle.IsCancellationRequested)
           {
-            try
+            // Note: Starting with .NET 4.5, you can make this simpler by using the CancellationTokenSource .ctor that
+            // takes a TimeSpan argument, thus eliminating the need to create a timer.
+            using (var timeout = new CancellationTokenSource(new TimeSpan(0, 9, 0)))
             {
-              // We set the timeout source so that if the idle.DoneToken is cancelled, it can cancel the timeout
-              idle.SetTimeoutSource(timeout);
-
-              if (idle.Client.Capabilities.HasFlag(ImapCapabilities.Idle))
+              try
               {
-                // The Idle() method will not return until the timeout has elapsed or idle.CancellationToken is cancelled
-                idle.Client.Idle(timeout.Token, idle.CancellationToken);
-              }
-              else
-              {
-                // The IMAP server does not support IDLE, so send a NOOP command instead
-                idle.Client.NoOp(idle.CancellationToken);
+                // We set the timeout source so that if the idle.DoneToken is cancelled, it can cancel the timeout
+                idle.SetTimeoutSource(timeout);
 
-                // Wait for the timeout to elapse or the cancellation token to be cancelled
-                WaitHandle.WaitAny(new[] {timeout.Token.WaitHandle, idle.CancellationToken.WaitHandle});
+                if (idle.Client.Capabilities.HasFlag(ImapCapabilities.Idle))
+                {
+                  // The Idle() method will not return until the timeout has elapsed or idle.CancellationToken is cancelled
+                  idle.Client.Idle(timeout.Token, idle.CancellationToken);
+                }
+                else
+                {
+                  // The IMAP server does not support IDLE, so send a NOOP command instead
+                  idle.Client.NoOp(idle.CancellationToken);
+
+                  // Wait for the timeout to elapse or the cancellation token to be cancelled
+                  WaitHandle.WaitAny(new[] {timeout.Token.WaitHandle, idle.CancellationToken.WaitHandle});
+                }
               }
-            }
-            catch (OperationCanceledException)
-            {
-              // This means that idle.CancellationToken was cancelled, not the DoneToken nor the timeout.
-              break;
-            }
-            catch (ImapProtocolException)
-            {
-              // The IMAP server sent garbage in a response and the ImapClient was unable to deal with it.
-              // This should never happen in practice, but it's probably still a good idea to handle it.
-              //
-              // Note: an ImapProtocolException almost always results in the ImapClient getting disconnected.
-              break;
-            }
-            catch (ImapCommandException)
-            {
-              // The IMAP server responded with "NO" or "BAD" to either the IDLE command or the NOOP command.
-              // This should never happen... but again, we're catching it for the sake of completeness.
-              break;
-            }
-            finally
-            {
-              // We're about to Dispose() the timeout source, so set it to null.
-              idle.SetTimeoutSource(null);
+              catch (OperationCanceledException)
+              {
+                // This means that idle.CancellationToken was cancelled, not the DoneToken nor the timeout.
+                break;
+              }
+              catch (ImapProtocolException)
+              {
+                // The IMAP server sent garbage in a response and the ImapClient was unable to deal with it.
+                // This should never happen in practice, but it's probably still a good idea to handle it.
+                //
+                // Note: an ImapProtocolException almost always results in the ImapClient getting disconnected.
+                break;
+              }
+              catch (ImapCommandException)
+              {
+                // The IMAP server responded with "NO" or "BAD" to either the IDLE command or the NOOP command.
+                // This should never happen... but again, we're catching it for the sake of completeness.
+                break;
+              }
+              finally
+              {
+                // We're about to Dispose() the timeout source, so set it to null.
+                idle.SetTimeoutSource(null);
+              }
             }
           }
         }
-      }
+      }, cancellationToken);
     }
   }
 }

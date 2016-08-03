@@ -45,3 +45,5 @@ fabric.properties
 
 packages/
 .idea.InternetSeparationAdapter/
+InternetSeparationAdapter/bin/
+InternetSeparationAdapter/obj/

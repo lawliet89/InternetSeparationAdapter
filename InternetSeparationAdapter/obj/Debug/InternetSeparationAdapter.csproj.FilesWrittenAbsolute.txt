@@ -1,9 +1,0 @@
-/home/yongwen/work/scratch/InternetSeparationAdapter/InternetSeparationAdapter/obj/Debug/.NETFramework,Version=v4.5.AssemblyAttribute.cs
-/home/yongwen/work/scratch/InternetSeparationAdapter/InternetSeparationAdapter/bin/Debug/InternetSeparationAdapter.exe.mdb
-/home/yongwen/work/scratch/InternetSeparationAdapter/InternetSeparationAdapter/bin/Debug/InternetSeparationAdapter.exe
-/home/yongwen/work/scratch/InternetSeparationAdapter/InternetSeparationAdapter/obj/Debug/InternetSeparationAdapter.exe
-/home/yongwen/work/scratch/InternetSeparationAdapter/InternetSeparationAdapter/obj/Debug/InternetSeparationAdapter.exe.mdb
-/home/yongwen/work/scratch/InternetSeparationAdapter/InternetSeparationAdapter/bin/Debug/Pop3.dll
-/home/yongwen/work/scratch/InternetSeparationAdapter/InternetSeparationAdapter/bin/Debug/BouncyCastle.Crypto.dll
-/home/yongwen/work/scratch/InternetSeparationAdapter/InternetSeparationAdapter/bin/Debug/MailKit.dll
-/home/yongwen/work/scratch/InternetSeparationAdapter/InternetSeparationAdapter/bin/Debug/MimeKit.dll
