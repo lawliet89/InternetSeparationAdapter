@@ -35,7 +35,7 @@ namespace InternetSeparationAdapter
           {
             var message = messages[e.Index];
 
-            Console.WriteLine("{0}: expunged message {1}: Subject: {2}", folder, e.Index, message.Envelope.Subject);
+            Console.WriteLine($"{folder}: expunged message {e.Index}: Subject: {message.Envelope.Subject}");
 
             // Note: If you are keeping a local cache of message information
             // (e.g. MessageSummary data) for the folder, then you'll need
@@ -44,7 +44,7 @@ namespace InternetSeparationAdapter
           }
           else
           {
-            Console.WriteLine("{0}: expunged message {1}: Unknown message.", folder, e.Index);
+            Console.WriteLine($"{folder}: expunged message {e.Index}: Unknown message.");
           }
         };
 
@@ -54,14 +54,14 @@ namespace InternetSeparationAdapter
           // Note: the CountChanged event will fire when new messages arrive in the folder and/or when messages are expunged.
           var folder = (ImapFolder) sender;
 
-          Console.WriteLine("The number of messages in {0} has changed.", folder);
+          Console.WriteLine($"The number of messages in {folder} has changed.");
 
           // Note: because we are keeping track of the MessageExpunged event and updating our
           // 'messages' list, we know that if we get a CountChanged event and folder.Count is
           // larger than messages.Count, then it means that new messages have arrived.
           if (folder.Count > messages.Count)
           {
-            Console.WriteLine("{0} new messages have arrived.", folder.Count - messages.Count);
+            Console.WriteLine($"{folder.Count - messages.Count} new messages have arrived.");
 
             // Note: your first instict may be to fetch these new messages now, but you cannot do
             // that in an event handler (the ImapFolder is not re-entrant).
@@ -76,7 +76,7 @@ namespace InternetSeparationAdapter
         {
           var folder = (ImapFolder) sender;
 
-          Console.WriteLine("{0}: flags for message {1} have changed to: {2}.", folder, e.Index, e.Flags);
+          Console.WriteLine($"{folder}: flags for message {e.Index} have changed to: {e.Flags}.");
         };
 
         Console.WriteLine("Hit any key to end the IDLE loop.");
@@ -102,7 +102,7 @@ namespace InternetSeparationAdapter
       }
     }
 
-    class IdleState
+    private class IdleState
     {
       readonly object mutex = new object();
       CancellationTokenSource timeout;
@@ -140,10 +140,7 @@ namespace InternetSeparationAdapter
       /// Check whether or not either of the CancellationToken's have been cancelled.
       /// </summary>
       /// <value><c>true</c> if cancellation was requested; otherwise, <c>false</c>.</value>
-      public bool IsCancellationRequested
-      {
-        get { return CancellationToken.IsCancellationRequested || DoneToken.IsCancellationRequested; }
-      }
+      public bool IsCancellationRequested => CancellationToken.IsCancellationRequested || DoneToken.IsCancellationRequested;
 
       /// <summary>
       /// Initializes a new instance of the <see cref="IdleState"/> class.
@@ -169,8 +166,7 @@ namespace InternetSeparationAdapter
       {
         lock (mutex)
         {
-          if (timeout != null)
-            timeout.Cancel();
+          timeout?.Cancel();
         }
       }
 
@@ -204,8 +200,6 @@ namespace InternetSeparationAdapter
           // For GMail, we use a 9 minute interval because they do not seem to keep the connection alive for more than ~10 minutes.
           while (!idle.IsCancellationRequested)
           {
-            // Note: Starting with .NET 4.5, you can make this simpler by using the CancellationTokenSource .ctor that
-            // takes a TimeSpan argument, thus eliminating the need to create a timer.
             using (var timeout = new CancellationTokenSource(new TimeSpan(0, 9, 0)))
             {
               try
@@ -254,7 +248,7 @@ namespace InternetSeparationAdapter
             }
           }
         }
-      }, cancellationToken);
+      });
     }
   }
 }
