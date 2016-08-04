@@ -32,15 +32,16 @@ namespace InternetSeparationAdapter
     {
       get
       {
-        if (HasParts)
+        if (MultiPartAlternative)
         {
           var part = PlainBodyPart ?? HtmlBodyPart;
           return part == null ? (BodyWithType?) null : DecodePart(part);
         }
-        else
+        if (MutliPartRelated)
         {
-          return DecodePart(Payload);
+          throw new NotImplementedException();
         }
+        return DecodePart(Payload);
       }
     }
 
@@ -54,7 +55,9 @@ namespace InternetSeparationAdapter
       get { return Payload.Headers.SingleOrDefault(header => header.Name == "To")?.Value; }
     }
 
-    public bool HasParts => Payload.MimeType == "multipart/alternative";
+    public bool MultiPartAlternative => Payload.MimeType == "multipart/alternative";
+
+    public bool MutliPartRelated => Payload.MimeType == "multipart/related";
 
 
     public MessagePart PlainBodyPart
