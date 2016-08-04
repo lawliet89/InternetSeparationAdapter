@@ -15,6 +15,7 @@ namespace InternetSeparationAdapter
       GmailService.Scope.GmailReadonly,
       GmailService.Scope.GmailModify
     };
+
     private const string ApplicationName = "Internet Separation Adapter";
 
 
@@ -30,7 +31,7 @@ namespace InternetSeparationAdapter
             }
             return null;
           }
-      );
+        );
 
       return arguments == null ? 1 : AsyncContext.Run(() => AsyncMain(arguments));
     }
@@ -38,10 +39,7 @@ namespace InternetSeparationAdapter
     private static async Task<int> AsyncMain(Arguments arguments)
     {
       var exitToken = new CancellationTokenSource();
-      Console.CancelKeyPress += (sender, cancelArgs) =>
-      {
-        exitToken.Cancel();
-      };
+      Console.CancelKeyPress += (sender, cancelArgs) => { exitToken.Cancel(); };
 
       var service = new Gmail(arguments.SecretsFile, arguments.CredentialsPath, Scopes,
         ApplicationName, exitToken.Token);
@@ -59,7 +57,6 @@ namespace InternetSeparationAdapter
         }
         catch (TaskCanceledException)
         {
-
         }
       }
 
