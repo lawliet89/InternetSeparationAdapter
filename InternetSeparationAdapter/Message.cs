@@ -72,6 +72,14 @@ namespace InternetSeparationAdapter
       get { return Payload.Parts.SingleOrDefault(part => part.MimeType == "text/html"); }
     }
 
+    public string FormattedMessage
+    {
+      get {
+        var body = Body.HasValue ? Body.Value.Value : "";
+        return From + "\n" + Subject + "\n" + body;
+      }
+    }
+
     private BodyWithType DecodePart(MessagePart part)
     {
       var contentType = new ContentType(part.Headers.SingleOrDefault(header => header.Name == "Content-Type")?.Value ??

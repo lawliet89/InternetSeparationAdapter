@@ -17,6 +17,7 @@ namespace InternetSeparationAdapter
     };
     private const string ApplicationName = "Internet Separation Adapter";
 
+
     public static int Main(string[] args)
     {
       var arguments = Parser.Default.ParseArguments<Arguments>(args)
@@ -44,6 +45,7 @@ namespace InternetSeparationAdapter
 
       var service = new Gmail(arguments.SecretsFile, arguments.CredentialsPath, Scopes,
         ApplicationName, exitToken.Token);
+      var bot = new Broadcaster(arguments.TelegramApiPath, arguments.TelegramChatGroupPath);
 
       var periodicTimespan = TimeSpan.FromSeconds(arguments.PollInterval);
 
@@ -52,7 +54,7 @@ namespace InternetSeparationAdapter
         try
         {
           Console.WriteLine($"[{DateTime.Now.ToLongDateString()} {DateTime.Now.ToLongTimeString()}] Polling");
-          await FetchUnread(service, arguments.Label, exitToken.Token);
+          await FetchUnread(service, bot, arguments.Label, exitToken.Token);
           await Task.Delay(periodicTimespan, exitToken.Token).ConfigureAwait(false);
         }
         catch (TaskCanceledException)
@@ -64,7 +66,8 @@ namespace InternetSeparationAdapter
       return 0;
     }
 
-    private static async Task FetchUnread(Gmail service, string label, CancellationToken cancellationToken)
+    private static async Task FetchUnread(Gmail service, Broadcaster bot,
+      string label, CancellationToken cancellationToken)
     {
       var messages = await service.GetUnreadMessage(label).ConfigureAwait(false);
 
@@ -83,6 +86,7 @@ namespace InternetSeparationAdapter
           {
             Console.WriteLine($"Body: {body.Value.Value}");
           }
+          await bot.SendToTelegram(message.FormattedMessage);
         }
         catch (NotImplementedException)
         {
@@ -96,6 +100,12 @@ namespace InternetSeparationAdapter
     {
       [Option('s', "secret", Required = true, HelpText = "Path to the Gmail API Secrets JSON file")]
       public string SecretsFile { get; set; }
+
+      [Option('t', "telegram-api-path", Required = true, HelpText = "Path to the Telegram API token file")]
+      public string TelegramApiPath { get; set; }
+
+      [Option('g', "telegram-chat-group-path", Required = true, HelpText = "Path to the Telegram chat group file")]
+      public string TelegramChatGroupPath { get; set; }
 
       [Option('c', "credentials-path", HelpText = "Path to directory to store OAuth Credentials")]
       public string CredentialsPath { get; set; }
