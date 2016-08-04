@@ -1,15 +1,11 @@
 ﻿using Google.Apis.Auth.OAuth2;
 using Google.Apis.Gmail.v1;
-using Google.Apis.Gmail.v1.Data;
 using Google.Apis.Services;
 using Google.Apis.Util.Store;
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
+using CommandLine;
 
 namespace InternetSeparationAdapter
 {
@@ -20,16 +16,29 @@ namespace InternetSeparationAdapter
     static string[] Scopes = {GmailService.Scope.GmailReadonly};
     static string ApplicationName = "Gmail API .NET Quickstart";
 
-    static void Main(string[] args)
+    public static int Main(string[] args)
     {
+      var arguments = Parser.Default.ParseArguments<Arguments>(args)
+        .MapResult(parsed => parsed,
+          errors =>
+          {
+            foreach (var error in errors)
+            {
+              Console.WriteLine(error);
+            }
+            return null;
+          }
+      );
+
+      if (arguments == null) return 1;
+
       UserCredential credential;
 
-      using (var stream =
-        new FileStream("client_id.json", FileMode.Open, FileAccess.Read))
+      Console.Write(arguments.CredentialsPath);
+
+      using (var stream = new FileStream(arguments.SecretsFile, FileMode.Open, FileAccess.Read))
       {
-        string credPath = System.Environment.GetFolderPath(
-          System.Environment.SpecialFolder.Personal);
-        credPath = Path.Combine(credPath, ".credentials/gmail-dotnet-quickstart.json");
+        var credPath = arguments.CredentialsPath ?? Arguments.DefaultCredentialsPath;
 
         credential = GoogleWebAuthorizationBroker.AuthorizeAsync(
           GoogleClientSecrets.Load(stream).Secrets,
@@ -47,27 +56,9 @@ namespace InternetSeparationAdapter
         ApplicationName = ApplicationName,
       });
 
-      // Define parameters of request.
-      UsersResource.LabelsResource.ListRequest request = service.Users.Labels.List("me");
-
-      // List labels.
-      var labels = request.Execute().Labels;
-      Console.WriteLine("Labels:");
-      if (labels != null && labels.Count > 0)
-      {
-        foreach (var labelItem in labels)
-        {
-          Console.WriteLine("{0}", labelItem.Name);
-        }
-      }
-      else
-      {
-        Console.WriteLine("No labels found.");
-      }
-
       // Get unread Inbox Messages
       var inboxUnreadRequest = service.Users.Messages.List("me");
-      inboxUnreadRequest.LabelIds = "INBOX";
+      inboxUnreadRequest.LabelIds = arguments.Label;
       inboxUnreadRequest.Q = "is:unread";
 
       var messages = inboxUnreadRequest.Execute().Messages;
@@ -87,6 +78,32 @@ namespace InternetSeparationAdapter
           Console.WriteLine($"Body: {body.Value.Value}");
         }
       }
+
+      return 0;
+    }
+
+    public class Arguments
+    {
+      [Option('s', "secret", Required = true, HelpText = "Path to the Gmail API Secrets JSON file")]
+      public string SecretsFile { get; set; }
+
+      [Option('c', "credentials-path", HelpText = "Path to directory to store OAuth Credentials")]
+      public string CredentialsPath { get; set; }
+
+      [Option('l', "label", HelpText = "The default label to look for emails. Defaults to INBOX",
+         Default = DefaultLabel)]
+      public string Label { get; set; }
+
+      public static string DefaultCredentialsPath
+      {
+        get
+        {
+          var credPath = Environment.GetFolderPath(Environment.SpecialFolder.Personal);
+          return Path.Combine(credPath, ".credentials/internet-separation-adapter.json");
+        }
+      }
+
+      public const string DefaultLabel = "INBOX";
     }
   }
 }

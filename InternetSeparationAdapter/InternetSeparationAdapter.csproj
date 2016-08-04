@@ -35,6 +35,9 @@
     <Reference Include="BouncyCastle.Crypto, Version=1.7.4137.9688, Culture=neutral, PublicKeyToken=a4292a325f69b123">
       <HintPath>..\packages\BouncyCastle.1.7.0\lib\Net40-Client\BouncyCastle.Crypto.dll</HintPath>
     </Reference>
+    <Reference Include="CommandLine, Version=2.0.275.0, Culture=neutral, PublicKeyToken=de6f01bd326f8c32">
+      <HintPath>..\packages\CommandLineParser.2.0.275-beta\lib\net45\CommandLine.dll</HintPath>
+    </Reference>
     <Reference Include="Google.Apis, Version=1.14.1.0, Culture=neutral, PublicKeyToken=4b01fa6e34db77ab">
       <HintPath>..\packages\Google.Apis.1.14.1\lib\net45\Google.Apis.dll</HintPath>
     </Reference>
