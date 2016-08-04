@@ -44,14 +44,14 @@ namespace InternetSeparationAdapter
         exitToken.Cancel();
       };
 
-      var credential = await GetCredentials(arguments.SecretsFile, Scopes, arguments.CredentialsPath, exitToken.Token);
-      var service = GetGmailService(credential, ApplicationName);
+      var service = new Gmail(arguments.SecretsFile, arguments.CredentialsPath, Scopes,
+        ApplicationName, exitToken.Token);
 
       if (exitToken.IsCancellationRequested) return 1;
 
-      var messages = await GetUnreadMessage(service, arguments.Label, exitToken.Token);
+      var messages = await service.GetUnreadMessage(arguments.Label);
 
-      foreach (var messageLazy in messages)
+      foreach (var messageLazy in service.FetchMessages(messages))
       {
         var message = await messageLazy;
         if (exitToken.IsCancellationRequested) return 1;
@@ -97,63 +97,6 @@ namespace InternetSeparationAdapter
       }
 
       public const string DefaultLabel = "INBOX";
-    }
-
-    private static Task<UserCredential > GetCredentials(string secretsFile,
-      IEnumerable<string> scopes,
-      string credentialsPath = null,
-      CancellationToken cancellation = default(CancellationToken))
-    {
-      using (var stream = new FileStream(secretsFile, FileMode.Open, FileAccess.Read))
-      {
-        var credPath = credentialsPath ?? Arguments.DefaultCredentialsPath;
-        Console.WriteLine("Credential file will be saved to: " + credPath);
-        return GoogleWebAuthorizationBroker.AuthorizeAsync(
-          GoogleClientSecrets.Load(stream).Secrets,
-          scopes,
-          "user",
-          cancellation,
-          new FileDataStore(credPath, true));
-      }
-    }
-
-    private static GmailService GetGmailService(IConfigurableHttpClientInitializer credentials, string applicationName)
-    {
-      return new GmailService(new BaseClientService.Initializer()
-      {
-        HttpClientInitializer = credentials,
-        ApplicationName = applicationName,
-      });
-    }
-
-    private static UsersResource.MessagesResource.ListRequest MakeUnreadMessageListRequest(GmailService service,
-      string label)
-    {
-      var request = service.Users.Messages.List("me");
-      request.LabelIds = label;
-      request.Q = "is:unread";
-      return request;
-    }
-
-    private static UsersResource.MessagesResource.GetRequest MakeGetMessageRequest(GmailService service, string id)
-    {
-      return service.Users.Messages.Get("me", id);
-    }
-
-    private static async Task<IEnumerable<Task<Message>>> GetUnreadMessage(GmailService service, string label,
-      CancellationToken cancellation = default(CancellationToken))
-    {
-      var request = MakeUnreadMessageListRequest(service, label);
-      var execution = await request.ExecuteAsync(cancellation);
-      if (cancellation.IsCancellationRequested) return null;
-      var messages = execution.Messages;
-
-      return messages.Select(async messageMeta =>
-      {
-        var messageRequest = MakeGetMessageRequest(service, messageMeta.Id);
-        var message = await messageRequest.ExecuteAsync(cancellation);
-        return cancellation.IsCancellationRequested ? null : new Message(message);
-      });
     }
   }
 }
