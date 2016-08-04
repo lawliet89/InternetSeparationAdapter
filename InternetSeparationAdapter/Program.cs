@@ -83,10 +83,10 @@ namespace InternetSeparationAdapter
       [Option('s', "secret", Required = true, HelpText = "Path to the Gmail API Secrets JSON file")]
       public string SecretsFile { get; set; }
 
-      [Option('t', "telegram-api-path", HelpText = "Path to the Telegram API token file")]
+      [Option('t', "telegram-api-path", Required = true, HelpText = "Path to the Telegram API token file")]
       public string TelegramApiPath { get; set; }
 
-      [Option('g', "telegram-chat-group-path", HelpText = "Path to the Telegram chat group file")]
+      [Option('g', "telegram-chat-group-path", Required = true, HelpText = "Path to the Telegram chat group file")]
       public string TelegramChatGroupPath { get; set; }
 
       [Option('c', "credentials-path", HelpText = "Path to directory to store OAuth Credentials")]
