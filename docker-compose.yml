@@ -1,0 +1,7 @@
+version: "2"
+services:
+  ias:
+    build: .
+    volumes:
+      - ./config:/usr/src/app/build/config
+      - ~/.credentials/internet-separation-adapter.json:/root/.credentials/internet-separation-adapter.json

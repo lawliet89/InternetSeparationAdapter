@@ -48,6 +48,3 @@ packages/
 InternetSeparationAdapter/bin/
 InternetSeparationAdapter/obj/
 config.json
-# client_id.json
-# telegram_api_token.txt
-# telegram_group.txt
