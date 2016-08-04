@@ -5,6 +5,7 @@ using Google.Apis.Util.Store;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using CommandLine;
@@ -46,20 +47,15 @@ namespace InternetSeparationAdapter
       var credential = await GetCredentials(arguments.SecretsFile, Scopes, arguments.CredentialsPath, exitToken.Token);
       var service = GetGmailService(credential, ApplicationName);
 
-      // Get unread Inbox Messages
-      var inboxUnreadRequest = service.Users.Messages.List("me");
-      inboxUnreadRequest.LabelIds = arguments.Label;
-      inboxUnreadRequest.Q = "is:unread";
+      if (exitToken.IsCancellationRequested) return 1;
 
-      var messages = inboxUnreadRequest.Execute().Messages;
-      Console.WriteLine($"{messages.Count} unread");
+      var messages = await GetUnreadMessage(service, arguments.Label, exitToken.Token);
 
-      foreach (var messageMeta in messages)
+      foreach (var messageLazy in messages)
       {
-        Console.WriteLine($"{messageMeta.Id}");
-        var id = messageMeta.Id;
-        var messageRequest = service.Users.Messages.Get("me", id);
-        var message = new Message(messageRequest.Execute());
+        var message = await messageLazy;
+        if (exitToken.IsCancellationRequested) return 1;
+        Console.WriteLine($"ID: {message.Id}");
         Console.WriteLine($"From: {message.From}");
         Console.WriteLine($"Subject: {message.Subject}");
         try
@@ -127,6 +123,36 @@ namespace InternetSeparationAdapter
       {
         HttpClientInitializer = credentials,
         ApplicationName = applicationName,
+      });
+    }
+
+    private static UsersResource.MessagesResource.ListRequest MakeUnreadMessageListRequest(GmailService service,
+      string label)
+    {
+      var request = service.Users.Messages.List("me");
+      request.LabelIds = label;
+      request.Q = "is:unread";
+      return request;
+    }
+
+    private static UsersResource.MessagesResource.GetRequest MakeGetMessageRequest(GmailService service, string id)
+    {
+      return service.Users.Messages.Get("me", id);
+    }
+
+    private static async Task<IEnumerable<Task<Message>>> GetUnreadMessage(GmailService service, string label,
+      CancellationToken cancellation = default(CancellationToken))
+    {
+      var request = MakeUnreadMessageListRequest(service, label);
+      var execution = await request.ExecuteAsync(cancellation);
+      if (cancellation.IsCancellationRequested) return null;
+      var messages = execution.Messages;
+
+      return messages.Select(async messageMeta =>
+      {
+        var messageRequest = MakeGetMessageRequest(service, messageMeta.Id);
+        var message = await messageRequest.ExecuteAsync(cancellation);
+        return cancellation.IsCancellationRequested ? null : new Message(message);
       });
     }
   }
