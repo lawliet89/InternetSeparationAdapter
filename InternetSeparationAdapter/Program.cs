@@ -45,15 +45,34 @@ namespace InternetSeparationAdapter
       var service = new Gmail(arguments.SecretsFile, arguments.CredentialsPath, Scopes,
         ApplicationName, exitToken.Token);
 
-      if (exitToken.IsCancellationRequested) return 1;
+      var periodicTimespan = TimeSpan.FromSeconds(arguments.PollInterval);
 
-      var messages = await service.GetUnreadMessage(arguments.Label).ConfigureAwait(false);
+      while (!exitToken.IsCancellationRequested)
+      {
+        try
+        {
+          Console.WriteLine($"[{DateTime.Now.ToLongDateString()} {DateTime.Now.ToLongTimeString()}] Polling");
+          await FetchUnread(service, arguments.Label, exitToken.Token);
+          await Task.Delay(periodicTimespan, exitToken.Token).ConfigureAwait(false);
+        }
+        catch (TaskCanceledException)
+        {
+
+        }
+      }
+
+      return 0;
+    }
+
+    private static async Task FetchUnread(Gmail service, string label, CancellationToken cancellationToken)
+    {
+      var messages = await service.GetUnreadMessage(label).ConfigureAwait(false);
 
       var messageBodies = service.FetchMessages(messages);
       foreach (var messageLazy in messageBodies)
       {
         var message = await messageLazy.ConfigureAwait(false);
-        if (exitToken.IsCancellationRequested) return 1;
+        if (cancellationToken.IsCancellationRequested) return;
         Console.WriteLine($"ID: {message.Id}");
         Console.WriteLine($"From: {message.From}");
         Console.WriteLine($"Subject: {message.Subject}");
@@ -71,7 +90,6 @@ namespace InternetSeparationAdapter
         }
       }
       await Task.WhenAll(service.MarkRead(messages)).ConfigureAwait(false);
-      return 0;
     }
 
     public class Arguments
@@ -85,6 +103,9 @@ namespace InternetSeparationAdapter
       [Option('l', "label", HelpText = "The default label to look for emails. Defaults to INBOX",
          Default = DefaultLabel)]
       public string Label { get; set; }
+
+      [Option('i', "interval", HelpText = "The interval to poll Gmail", Default = 30)]
+      public int PollInterval { get; set; }
 
       public static string DefaultCredentialsPath
       {

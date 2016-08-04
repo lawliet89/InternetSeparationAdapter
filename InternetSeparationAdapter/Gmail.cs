@@ -71,7 +71,8 @@ namespace InternetSeparationAdapter
     {
       var request = MakeUnreadMessageListRequest(label);
       var execution = await request.ExecuteAsync(_cancellationToken);
-      return _cancellationToken.IsCancellationRequested ? null : execution.Messages;
+      if (_cancellationToken.IsCancellationRequested) return null;
+      return execution.Messages ?? Enumerable.Empty<Google.Apis.Gmail.v1.Data.Message>().ToList();
     }
 
     private UsersResource.MessagesResource.GetRequest MakeGetMessageRequest(string id)
@@ -89,7 +90,8 @@ namespace InternetSeparationAdapter
       });
     }
 
-    public IEnumerable<Task<Google.Apis.Gmail.v1.Data.Message>> MarkRead(IEnumerable<Google.Apis.Gmail.v1.Data.Message> messages)
+    public IEnumerable<Task<Google.Apis.Gmail.v1.Data.Message>> MarkRead(
+      IEnumerable<Google.Apis.Gmail.v1.Data.Message> messages)
     {
       return messages.Select(message =>
       {
