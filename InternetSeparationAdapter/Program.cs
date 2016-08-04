@@ -1,22 +1,20 @@
-﻿using Google.Apis.Auth.OAuth2;
-using Google.Apis.Gmail.v1;
-using Google.Apis.Services;
-using Google.Apis.Util.Store;
+﻿using Google.Apis.Gmail.v1;
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using CommandLine;
-using Google.Apis.Http;
 using Nito.AsyncEx;
 
 namespace InternetSeparationAdapter
 {
   internal class Program
   {
-    private static readonly string[] Scopes = {GmailService.Scope.GmailReadonly};
+    private static readonly string[] Scopes =
+    {
+      GmailService.Scope.GmailReadonly,
+      GmailService.Scope.GmailModify
+    };
     private const string ApplicationName = "Internet Separation Adapter";
 
     public static int Main(string[] args)
@@ -49,11 +47,12 @@ namespace InternetSeparationAdapter
 
       if (exitToken.IsCancellationRequested) return 1;
 
-      var messages = await service.GetUnreadMessage(arguments.Label);
+      var messages = await service.GetUnreadMessage(arguments.Label).ConfigureAwait(false);
 
-      foreach (var messageLazy in service.FetchMessages(messages))
+      var messageBodies = service.FetchMessages(messages);
+      foreach (var messageLazy in messageBodies)
       {
-        var message = await messageLazy;
+        var message = await messageLazy.ConfigureAwait(false);
         if (exitToken.IsCancellationRequested) return 1;
         Console.WriteLine($"ID: {message.Id}");
         Console.WriteLine($"From: {message.From}");
@@ -71,7 +70,7 @@ namespace InternetSeparationAdapter
           Console.WriteLine("Body: mutlipart/related");
         }
       }
-
+      await Task.WhenAll(service.MarkRead(messages)).ConfigureAwait(false);
       return 0;
     }
 
