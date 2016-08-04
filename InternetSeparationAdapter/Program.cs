@@ -62,10 +62,17 @@ namespace InternetSeparationAdapter
         var message = new Message(messageRequest.Execute());
         Console.WriteLine($"From: {message.From}");
         Console.WriteLine($"Subject: {message.Subject}");
-        var body = message.Body;
-        if (body.HasValue)
+        try
         {
-          Console.WriteLine($"Body: {body.Value.Value}");
+          var body = message.Body;
+          if (body.HasValue)
+          {
+            Console.WriteLine($"Body: {body.Value.Value}");
+          }
+        }
+        catch (NotImplementedException)
+        {
+          Console.WriteLine("Body: mutlipart/related");
         }
       }
 
