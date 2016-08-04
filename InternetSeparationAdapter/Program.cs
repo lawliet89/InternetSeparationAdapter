@@ -3,18 +3,18 @@ using Google.Apis.Gmail.v1;
 using Google.Apis.Services;
 using Google.Apis.Util.Store;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using CommandLine;
+using Google.Apis.Http;
 
 namespace InternetSeparationAdapter
 {
-  class Program
+  internal class Program
   {
-    // If modifying these scopes, delete your previously saved credentials
-    // at ~/.credentials/gmail-dotnet-quickstart.json
-    static string[] Scopes = {GmailService.Scope.GmailReadonly};
-    static string ApplicationName = "Gmail API .NET Quickstart";
+    private static readonly string[] Scopes = {GmailService.Scope.GmailReadonly};
+    private const string ApplicationName = "Internet Separation Adapter";
 
     public static int Main(string[] args)
     {
@@ -32,29 +32,14 @@ namespace InternetSeparationAdapter
 
       if (arguments == null) return 1;
 
-      UserCredential credential;
-
-      Console.Write(arguments.CredentialsPath);
-
-      using (var stream = new FileStream(arguments.SecretsFile, FileMode.Open, FileAccess.Read))
+      var exitToken = new CancellationTokenSource();
+      Console.CancelKeyPress += (sender, cancelArgs) =>
       {
-        var credPath = arguments.CredentialsPath ?? Arguments.DefaultCredentialsPath;
+        exitToken.Cancel();
+      };
 
-        credential = GoogleWebAuthorizationBroker.AuthorizeAsync(
-          GoogleClientSecrets.Load(stream).Secrets,
-          Scopes,
-          "user",
-          CancellationToken.None,
-          new FileDataStore(credPath, true)).Result;
-        Console.WriteLine("Credential file saved to: " + credPath);
-      }
-
-      // Create Gmail API service.
-      var service = new GmailService(new BaseClientService.Initializer()
-      {
-        HttpClientInitializer = credential,
-        ApplicationName = ApplicationName,
-      });
+      var credential = GetCredentials(arguments.SecretsFile, Scopes, arguments.CredentialsPath, exitToken.Token);
+      var service = GetGmailService(credential, ApplicationName);
 
       // Get unread Inbox Messages
       var inboxUnreadRequest = service.Users.Messages.List("me");
@@ -104,6 +89,33 @@ namespace InternetSeparationAdapter
       }
 
       public const string DefaultLabel = "INBOX";
+    }
+
+    private static UserCredential GetCredentials(string secretsFile,
+      IEnumerable<string> scopes,
+      string credentialsPath = null,
+      CancellationToken cancellation = default(CancellationToken))
+    {
+      using (var stream = new FileStream(secretsFile, FileMode.Open, FileAccess.Read))
+      {
+        var credPath = credentialsPath ?? Arguments.DefaultCredentialsPath;
+        Console.WriteLine("Credential file will be saved to: " + credPath);
+        return GoogleWebAuthorizationBroker.AuthorizeAsync(
+          GoogleClientSecrets.Load(stream).Secrets,
+          scopes,
+          "user",
+          cancellation,
+          new FileDataStore(credPath, true)).Result;
+      }
+    }
+
+    private static GmailService GetGmailService(IConfigurableHttpClientInitializer credentials, string applicationName)
+    {
+      return new GmailService(new BaseClientService.Initializer()
+      {
+        HttpClientInitializer = credentials,
+        ApplicationName = applicationName,
+      });
     }
   }
 }
