@@ -6,8 +6,10 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading;
+using System.Threading.Tasks;
 using CommandLine;
 using Google.Apis.Http;
+using Nito.AsyncEx;
 
 namespace InternetSeparationAdapter
 {
@@ -30,15 +32,18 @@ namespace InternetSeparationAdapter
           }
       );
 
-      if (arguments == null) return 1;
+      return arguments == null ? 1 : AsyncContext.Run(() => AsyncMain(arguments));
+    }
 
+    private static async Task<int> AsyncMain(Arguments arguments)
+    {
       var exitToken = new CancellationTokenSource();
       Console.CancelKeyPress += (sender, cancelArgs) =>
       {
         exitToken.Cancel();
       };
 
-      var credential = GetCredentials(arguments.SecretsFile, Scopes, arguments.CredentialsPath, exitToken.Token);
+      var credential = await GetCredentials(arguments.SecretsFile, Scopes, arguments.CredentialsPath, exitToken.Token);
       var service = GetGmailService(credential, ApplicationName);
 
       // Get unread Inbox Messages
@@ -91,7 +96,7 @@ namespace InternetSeparationAdapter
       public const string DefaultLabel = "INBOX";
     }
 
-    private static UserCredential GetCredentials(string secretsFile,
+    private static Task<UserCredential > GetCredentials(string secretsFile,
       IEnumerable<string> scopes,
       string credentialsPath = null,
       CancellationToken cancellation = default(CancellationToken))
@@ -105,7 +110,7 @@ namespace InternetSeparationAdapter
           scopes,
           "user",
           cancellation,
-          new FileDataStore(credPath, true)).Result;
+          new FileDataStore(credPath, true));
       }
     }
 
