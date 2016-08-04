@@ -29,6 +29,7 @@ namespace InternetSeparationAdapter
       CancellationToken cancellationToken = default(CancellationToken))
     {
       _credentials = GetCredentials(secretsFile, scopes, credentialsPath, cancellationToken).Result;
+      _cancellationToken = cancellationToken;
       if (cancellationToken.IsCancellationRequested) throw new OperationCanceledException();
       _service = GetGmailService(_credentials, applicationName);
     }
