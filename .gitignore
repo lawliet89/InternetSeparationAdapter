@@ -47,6 +47,7 @@ packages/
 .idea.InternetSeparationAdapter/
 InternetSeparationAdapter/bin/
 InternetSeparationAdapter/obj/
-client_id.json
-telegram_api_token.txt
-telegram_group.txt
+config.json
+# client_id.json
+# telegram_api_token.txt
+# telegram_group.txt

@@ -4,6 +4,7 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using CommandLine;
+using Newtonsoft.Json;
 using Nito.AsyncEx;
 
 namespace InternetSeparationAdapter
@@ -21,38 +22,33 @@ namespace InternetSeparationAdapter
 
     public static int Main(string[] args)
     {
-      var arguments = Parser.Default.ParseArguments<Arguments>(args)
-        .MapResult(parsed => parsed,
-          errors =>
-          {
-            foreach (var error in errors)
-            {
-              Console.WriteLine(error);
-            }
-            return null;
-          }
-        );
-
-      return arguments == null ? 1 : AsyncContext.Run(() => AsyncMain(arguments));
+      if (args.Length < 1)
+      {
+        Console.Write("Usage: InternetSeparationAdapter.exe path/to/config,json");
+        return 1;
+      }
+      var configPath = args[0];
+      var config = InitializeConfig(configPath);
+      return config == null ? 1 : AsyncContext.Run(() => AsyncMain(config));
     }
 
-    private static async Task<int> AsyncMain(Arguments arguments)
+    private static async Task<int> AsyncMain(Config config)
     {
       var exitToken = new CancellationTokenSource();
       Console.CancelKeyPress += (sender, cancelArgs) => { exitToken.Cancel(); };
 
-      var service = new Gmail(arguments.SecretsFile, arguments.CredentialsPath, Scopes,
+      var service = new Gmail(config.GoogleCredentials.Secrets, config.StoredGoogleCredentialsPath, Scopes,
         ApplicationName, exitToken.Token);
-      var bot = new Broadcaster(arguments.TelegramApiPath, arguments.TelegramChatGroupPath);
+      var bot = new Broadcaster(config.TelegramApiToken, config.TelegramChatGroupIds);
 
-      var periodicTimespan = TimeSpan.FromSeconds(arguments.PollInterval);
+      var periodicTimespan = TimeSpan.FromSeconds(config.PollInterval);
 
       while (!exitToken.IsCancellationRequested)
       {
         try
         {
           Console.WriteLine($"[{DateTime.Now.ToLongDateString()} {DateTime.Now.ToLongTimeString()}] Polling");
-          await FetchUnread(service, bot, arguments.Label, exitToken.Token);
+          await FetchUnread(service, bot, config.Label, exitToken.Token).ConfigureAwait(false);
           await Task.Delay(periodicTimespan, exitToken.Token).ConfigureAwait(false);
         }
         catch (TaskCanceledException)
@@ -83,7 +79,7 @@ namespace InternetSeparationAdapter
           {
             Console.WriteLine($"Body: {body.Value.Value}");
           }
-          await bot.SendToTelegram(message.FormattedMessage);
+          await Task.WhenAll(bot.SendToTelegram(message.FormattedMessage)).ConfigureAwait(false);
         }
         catch (NotImplementedException)
         {
@@ -93,37 +89,9 @@ namespace InternetSeparationAdapter
       await Task.WhenAll(service.MarkRead(messages)).ConfigureAwait(false);
     }
 
-    public class Arguments
+    private static Config InitializeConfig(string configPath)
     {
-      [Option('s', "secret", Required = true, HelpText = "Path to the Gmail API Secrets JSON file")]
-      public string SecretsFile { get; set; }
-
-      [Option('t', "telegram-api-path", Required = true, HelpText = "Path to the Telegram API token file")]
-      public string TelegramApiPath { get; set; }
-
-      [Option('g', "telegram-chat-group-path", Required = true, HelpText = "Path to the Telegram chat group file")]
-      public string TelegramChatGroupPath { get; set; }
-
-      [Option('c', "credentials-path", HelpText = "Path to directory to store OAuth Credentials")]
-      public string CredentialsPath { get; set; }
-
-      [Option('l', "label", HelpText = "The default label to look for emails. Defaults to INBOX",
-         Default = DefaultLabel)]
-      public string Label { get; set; }
-
-      [Option('i', "interval", HelpText = "The interval to poll Gmail", Default = 30)]
-      public int PollInterval { get; set; }
-
-      public static string DefaultCredentialsPath
-      {
-        get
-        {
-          var credPath = Environment.GetFolderPath(Environment.SpecialFolder.Personal);
-          return Path.Combine(credPath, ".credentials/internet-separation-adapter.json");
-        }
-      }
-
-      public const string DefaultLabel = "INBOX";
+      return JsonConvert.DeserializeObject<Config>(File.ReadAllText(configPath));
     }
   }
 }

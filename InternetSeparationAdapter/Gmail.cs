@@ -25,31 +25,28 @@ namespace InternetSeparationAdapter
     private readonly IConfigurableHttpClientInitializer _credentials;
 
     // TODO: Don't block on getting credentials -- make it an async method call for the user
-    public Gmail(string secretsFile, string credentialsPath, IEnumerable<string> scopes, string applicationName,
+    public Gmail(ClientSecrets secret, string credentialsPath, IEnumerable<string> scopes, string applicationName,
       CancellationToken cancellationToken = default(CancellationToken))
     {
-      _credentials = GetCredentials(secretsFile, scopes, credentialsPath, cancellationToken).Result;
+      _credentials = GetCredentials(secret, scopes, credentialsPath, cancellationToken).Result;
       _cancellationToken = cancellationToken;
       if (cancellationToken.IsCancellationRequested) throw new OperationCanceledException();
       _service = GetGmailService(_credentials, applicationName);
     }
 
-    private static Task<UserCredential> GetCredentials(string secretsFile,
+    private static Task<UserCredential> GetCredentials(ClientSecrets secret,
       IEnumerable<string> scopes,
       string credentialsPath = null,
       CancellationToken cancellation = default(CancellationToken))
     {
-      using (var stream = new FileStream(secretsFile, FileMode.Open, FileAccess.Read))
-      {
-        var credPath = credentialsPath ?? Program.Arguments.DefaultCredentialsPath;
-        Console.WriteLine("Credential file will be saved to: " + credPath);
-        return GoogleWebAuthorizationBroker.AuthorizeAsync(
-          GoogleClientSecrets.Load(stream).Secrets,
-          scopes,
-          "user",
-          cancellation,
-          new FileDataStore(credPath, true));
-      }
+      var credPath = credentialsPath ?? Config.DefaultCredentialsPath;
+      Console.WriteLine("Credential file will be saved to: " + credPath);
+      return GoogleWebAuthorizationBroker.AuthorizeAsync(
+        secret,
+        scopes,
+        "user",
+        cancellation,
+        new FileDataStore(credPath, true));
     }
 
     private static GmailService GetGmailService(IConfigurableHttpClientInitializer credentials, string applicationName)

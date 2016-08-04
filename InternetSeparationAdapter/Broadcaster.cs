@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using Telegram.Bot;
 
@@ -8,29 +10,17 @@ namespace InternetSeparationAdapter
   public class Broadcaster
   {
     private readonly TelegramBotClient _telegramBot;
-    private readonly long _telegramChatId;
+    private readonly IList<long> _telegramGroupIds;
 
-    public Broadcaster(string apiTokenPath, string chatGroupIdPath)
+    public Broadcaster(string apiToken, IList<long> groupIds)
     {
-      string apiToken;
-      using (var reader = new StreamReader(apiTokenPath))
-      {
-        apiToken = reader.ReadLine() ?? "";
-      }
-
-      string chatId;
-      using (var reader = new StreamReader(chatGroupIdPath))
-      {
-        chatId = reader.ReadLine() ?? "";
-      }
-
       _telegramBot = new TelegramBotClient(apiToken);
-      _telegramChatId = Convert.ToInt64(chatId);
+      _telegramGroupIds = groupIds;
     }
 
-    public async Task SendToTelegram(string message)
+    public IEnumerable<Task> SendToTelegram(string message)
     {
-      await _telegramBot.SendTextMessageAsync(_telegramChatId, message);
+      return _telegramGroupIds.Select(id => _telegramBot.SendTextMessageAsync(id, message));
     }
   }
 }
