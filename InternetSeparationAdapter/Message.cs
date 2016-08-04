@@ -23,6 +23,8 @@ namespace InternetSeparationAdapter
 
     public MessagePart Payload => RawMessage.Payload;
 
+    public string Id => RawMessage.Id;
+
     public string Subject
     {
       get { return Payload.Headers.SingleOrDefault(header => header.Name == "Subject")?.Value; }

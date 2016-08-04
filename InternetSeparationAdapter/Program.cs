@@ -3,18 +3,21 @@ using Google.Apis.Gmail.v1;
 using Google.Apis.Services;
 using Google.Apis.Util.Store;
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 using CommandLine;
+using Google.Apis.Http;
+using Nito.AsyncEx;
 
 namespace InternetSeparationAdapter
 {
-  class Program
+  internal class Program
   {
-    // If modifying these scopes, delete your previously saved credentials
-    // at ~/.credentials/gmail-dotnet-quickstart.json
-    static string[] Scopes = {GmailService.Scope.GmailReadonly};
-    static string ApplicationName = "Gmail API .NET Quickstart";
+    private static readonly string[] Scopes = {GmailService.Scope.GmailReadonly};
+    private const string ApplicationName = "Internet Separation Adapter";
 
     public static int Main(string[] args)
     {
@@ -30,52 +33,42 @@ namespace InternetSeparationAdapter
           }
       );
 
-      if (arguments == null) return 1;
+      return arguments == null ? 1 : AsyncContext.Run(() => AsyncMain(arguments));
+    }
 
-      UserCredential credential;
-
-      Console.Write(arguments.CredentialsPath);
-
-      using (var stream = new FileStream(arguments.SecretsFile, FileMode.Open, FileAccess.Read))
+    private static async Task<int> AsyncMain(Arguments arguments)
+    {
+      var exitToken = new CancellationTokenSource();
+      Console.CancelKeyPress += (sender, cancelArgs) =>
       {
-        var credPath = arguments.CredentialsPath ?? Arguments.DefaultCredentialsPath;
+        exitToken.Cancel();
+      };
 
-        credential = GoogleWebAuthorizationBroker.AuthorizeAsync(
-          GoogleClientSecrets.Load(stream).Secrets,
-          Scopes,
-          "user",
-          CancellationToken.None,
-          new FileDataStore(credPath, true)).Result;
-        Console.WriteLine("Credential file saved to: " + credPath);
-      }
+      var credential = await GetCredentials(arguments.SecretsFile, Scopes, arguments.CredentialsPath, exitToken.Token);
+      var service = GetGmailService(credential, ApplicationName);
 
-      // Create Gmail API service.
-      var service = new GmailService(new BaseClientService.Initializer()
+      if (exitToken.IsCancellationRequested) return 1;
+
+      var messages = await GetUnreadMessage(service, arguments.Label, exitToken.Token);
+
+      foreach (var messageLazy in messages)
       {
-        HttpClientInitializer = credential,
-        ApplicationName = ApplicationName,
-      });
-
-      // Get unread Inbox Messages
-      var inboxUnreadRequest = service.Users.Messages.List("me");
-      inboxUnreadRequest.LabelIds = arguments.Label;
-      inboxUnreadRequest.Q = "is:unread";
-
-      var messages = inboxUnreadRequest.Execute().Messages;
-      Console.WriteLine($"{messages.Count} unread");
-
-      foreach (var messageMeta in messages)
-      {
-        Console.WriteLine($"{messageMeta.Id}");
-        var id = messageMeta.Id;
-        var messageRequest = service.Users.Messages.Get("me", id);
-        var message = new Message(messageRequest.Execute());
+        var message = await messageLazy;
+        if (exitToken.IsCancellationRequested) return 1;
+        Console.WriteLine($"ID: {message.Id}");
         Console.WriteLine($"From: {message.From}");
         Console.WriteLine($"Subject: {message.Subject}");
-        var body = message.Body;
-        if (body.HasValue)
+        try
         {
-          Console.WriteLine($"Body: {body.Value.Value}");
+          var body = message.Body;
+          if (body.HasValue)
+          {
+            Console.WriteLine($"Body: {body.Value.Value}");
+          }
+        }
+        catch (NotImplementedException)
+        {
+          Console.WriteLine("Body: mutlipart/related");
         }
       }
 
@@ -104,6 +97,63 @@ namespace InternetSeparationAdapter
       }
 
       public const string DefaultLabel = "INBOX";
+    }
+
+    private static Task<UserCredential > GetCredentials(string secretsFile,
+      IEnumerable<string> scopes,
+      string credentialsPath = null,
+      CancellationToken cancellation = default(CancellationToken))
+    {
+      using (var stream = new FileStream(secretsFile, FileMode.Open, FileAccess.Read))
+      {
+        var credPath = credentialsPath ?? Arguments.DefaultCredentialsPath;
+        Console.WriteLine("Credential file will be saved to: " + credPath);
+        return GoogleWebAuthorizationBroker.AuthorizeAsync(
+          GoogleClientSecrets.Load(stream).Secrets,
+          scopes,
+          "user",
+          cancellation,
+          new FileDataStore(credPath, true));
+      }
+    }
+
+    private static GmailService GetGmailService(IConfigurableHttpClientInitializer credentials, string applicationName)
+    {
+      return new GmailService(new BaseClientService.Initializer()
+      {
+        HttpClientInitializer = credentials,
+        ApplicationName = applicationName,
+      });
+    }
+
+    private static UsersResource.MessagesResource.ListRequest MakeUnreadMessageListRequest(GmailService service,
+      string label)
+    {
+      var request = service.Users.Messages.List("me");
+      request.LabelIds = label;
+      request.Q = "is:unread";
+      return request;
+    }
+
+    private static UsersResource.MessagesResource.GetRequest MakeGetMessageRequest(GmailService service, string id)
+    {
+      return service.Users.Messages.Get("me", id);
+    }
+
+    private static async Task<IEnumerable<Task<Message>>> GetUnreadMessage(GmailService service, string label,
+      CancellationToken cancellation = default(CancellationToken))
+    {
+      var request = MakeUnreadMessageListRequest(service, label);
+      var execution = await request.ExecuteAsync(cancellation);
+      if (cancellation.IsCancellationRequested) return null;
+      var messages = execution.Messages;
+
+      return messages.Select(async messageMeta =>
+      {
+        var messageRequest = MakeGetMessageRequest(service, messageMeta.Id);
+        var message = await messageRequest.ExecuteAsync(cancellation);
+        return cancellation.IsCancellationRequested ? null : new Message(message);
+      });
     }
   }
 }
