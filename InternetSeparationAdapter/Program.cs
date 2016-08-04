@@ -1,22 +1,20 @@
-﻿using Google.Apis.Auth.OAuth2;
-using Google.Apis.Gmail.v1;
-using Google.Apis.Services;
-using Google.Apis.Util.Store;
+﻿using Google.Apis.Gmail.v1;
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using CommandLine;
-using Google.Apis.Http;
 using Nito.AsyncEx;
 
 namespace InternetSeparationAdapter
 {
   internal class Program
   {
-    private static readonly string[] Scopes = {GmailService.Scope.GmailReadonly};
+    private static readonly string[] Scopes =
+    {
+      GmailService.Scope.GmailReadonly,
+      GmailService.Scope.GmailModify
+    };
     private const string ApplicationName = "Internet Separation Adapter";
 
 
@@ -49,14 +47,35 @@ namespace InternetSeparationAdapter
         ApplicationName, exitToken.Token);
       var bot = new Broadcaster(arguments.TelegramApiPath, arguments.TelegramChatGroupPath);
 
-      if (exitToken.IsCancellationRequested) return 1;
+      var periodicTimespan = TimeSpan.FromSeconds(arguments.PollInterval);
 
-      var messages = await service.GetUnreadMessage(arguments.Label);
-
-      foreach (var messageLazy in service.FetchMessages(messages))
+      while (!exitToken.IsCancellationRequested)
       {
-        var message = await messageLazy;
-        if (exitToken.IsCancellationRequested) return 1;
+        try
+        {
+          Console.WriteLine($"[{DateTime.Now.ToLongDateString()} {DateTime.Now.ToLongTimeString()}] Polling");
+          await FetchUnread(service, bot, arguments.Label, exitToken.Token);
+          await Task.Delay(periodicTimespan, exitToken.Token).ConfigureAwait(false);
+        }
+        catch (TaskCanceledException)
+        {
+
+        }
+      }
+
+      return 0;
+    }
+
+    private static async Task FetchUnread(Gmail service, Broadcaster bot,
+      string label, CancellationToken cancellationToken)
+    {
+      var messages = await service.GetUnreadMessage(label).ConfigureAwait(false);
+
+      var messageBodies = service.FetchMessages(messages);
+      foreach (var messageLazy in messageBodies)
+      {
+        var message = await messageLazy.ConfigureAwait(false);
+        if (cancellationToken.IsCancellationRequested) return;
         Console.WriteLine($"ID: {message.Id}");
         Console.WriteLine($"From: {message.From}");
         Console.WriteLine($"Subject: {message.Subject}");
@@ -74,8 +93,7 @@ namespace InternetSeparationAdapter
           Console.WriteLine("Body: mutlipart/related");
         }
       }
-
-      return 0;
+      await Task.WhenAll(service.MarkRead(messages)).ConfigureAwait(false);
     }
 
     public class Arguments
@@ -95,6 +113,9 @@ namespace InternetSeparationAdapter
       [Option('l', "label", HelpText = "The default label to look for emails. Defaults to INBOX",
          Default = DefaultLabel)]
       public string Label { get; set; }
+
+      [Option('i', "interval", HelpText = "The interval to poll Gmail", Default = 30)]
+      public int PollInterval { get; set; }
 
       public static string DefaultCredentialsPath
       {

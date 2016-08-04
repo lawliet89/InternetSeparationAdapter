@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Google.Apis.Auth.OAuth2;
 using Google.Apis.Gmail.v1;
+using Google.Apis.Gmail.v1.Data;
 using Google.Apis.Http;
 using Google.Apis.Services;
 using Google.Apis.Util.Store;
@@ -16,10 +17,14 @@ namespace InternetSeparationAdapter
   {
     private const string UnreadLabel = "UNREAD";
 
+    private static ModifyMessageRequest MarkUnreadRequest =
+      new ModifyMessageRequest {RemoveLabelIds = new[] {UnreadLabel}};
+
     private readonly CancellationToken _cancellationToken;
     private readonly GmailService _service;
     private readonly IConfigurableHttpClientInitializer _credentials;
 
+    // TODO: Don't block on getting credentials -- make it an async method call for the user
     public Gmail(string secretsFile, string credentialsPath, IEnumerable<string> scopes, string applicationName,
       CancellationToken cancellationToken = default(CancellationToken))
     {
@@ -66,7 +71,8 @@ namespace InternetSeparationAdapter
     {
       var request = MakeUnreadMessageListRequest(label);
       var execution = await request.ExecuteAsync(_cancellationToken);
-      return _cancellationToken.IsCancellationRequested ? null : execution.Messages;
+      if (_cancellationToken.IsCancellationRequested) return null;
+      return execution.Messages ?? Enumerable.Empty<Google.Apis.Gmail.v1.Data.Message>().ToList();
     }
 
     private UsersResource.MessagesResource.GetRequest MakeGetMessageRequest(string id)
@@ -84,9 +90,14 @@ namespace InternetSeparationAdapter
       });
     }
 
-    public void MarkRead(IEnumerable<Google.Apis.Gmail.v1.Data.Message> messages)
+    public IEnumerable<Task<Google.Apis.Gmail.v1.Data.Message>> MarkRead(
+      IEnumerable<Google.Apis.Gmail.v1.Data.Message> messages)
     {
-      throw new NotImplementedException();
+      return messages.Select(message =>
+      {
+        var request = _service.Users.Messages.Modify(MarkUnreadRequest, "me", message.Id);
+        return request.ExecuteAsync(_cancellationToken);
+      });
     }
   }
 }
