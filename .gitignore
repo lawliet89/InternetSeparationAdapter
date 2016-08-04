@@ -47,3 +47,4 @@ packages/
 .idea.InternetSeparationAdapter/
 InternetSeparationAdapter/bin/
 InternetSeparationAdapter/obj/
+client_id.json
