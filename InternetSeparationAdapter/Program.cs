@@ -28,8 +28,16 @@ namespace InternetSeparationAdapter
         return 1;
       }
       var configPath = args[0];
-      var config = InitializeConfig(configPath);
+      var configStream = GetConfigStream(configPath);
+      var json = new StreamReader(configStream).ReadToEnd();
+      var config = InitializeConfig(json);
       return config == null ? 1 : AsyncContext.Run(() => AsyncMain(config));
+    }
+
+    private static Stream GetConfigStream(string configPath)
+    {
+      return configPath == "-" ? Console.OpenStandardInput() :
+        new FileStream(configPath, FileMode.Open, FileAccess.Read);
     }
 
     private static async Task<int> AsyncMain(Config config)
@@ -89,9 +97,9 @@ namespace InternetSeparationAdapter
       await Task.WhenAll(service.MarkRead(messages)).ConfigureAwait(false);
     }
 
-    private static Config InitializeConfig(string configPath)
+    private static Config InitializeConfig(string json)
     {
-      return JsonConvert.DeserializeObject<Config>(File.ReadAllText(configPath));
+      return JsonConvert.DeserializeObject<Config>(json);
     }
   }
 }
