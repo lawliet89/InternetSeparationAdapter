@@ -20,10 +20,10 @@ namespace InternetSeparationAdapter
     private readonly GmailService _service;
     private readonly IConfigurableHttpClientInitializer _credentials;
 
-    public Gmail(string secretFile, string credentialsPath, IEnumerable<string> scopes, string applicationName,
+    public Gmail(string secretsFile, string credentialsPath, IEnumerable<string> scopes, string applicationName,
       CancellationToken cancellationToken = default(CancellationToken))
     {
-      _credentials = GetCredentials(secretFile, scopes, credentialsPath, cancellationToken).Result;
+      _credentials = GetCredentials(secretsFile, scopes, credentialsPath, cancellationToken).Result;
       if (cancellationToken.IsCancellationRequested) throw new OperationCanceledException();
       _service = GetGmailService(_credentials, applicationName);
     }

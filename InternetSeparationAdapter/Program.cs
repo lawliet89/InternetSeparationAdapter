@@ -47,7 +47,7 @@ namespace InternetSeparationAdapter
 
       var service = new Gmail(arguments.SecretsFile, arguments.CredentialsPath, Scopes,
         ApplicationName, exitToken.Token);
-      var bot = new Broadcaster(0); // TODO: move this to a config file
+      var bot = new Broadcaster(arguments.TelegramApiPath, arguments.TelegramChatGroupPath);
 
       if (exitToken.IsCancellationRequested) return 1;
 
@@ -67,7 +67,7 @@ namespace InternetSeparationAdapter
           {
             Console.WriteLine($"Body: {body.Value.Value}");
           }
-          bot.SendToTelegram(message.FormattedMessage);
+          await bot.SendToTelegram(message.FormattedMessage);
         }
         catch (NotImplementedException)
         {
@@ -82,6 +82,12 @@ namespace InternetSeparationAdapter
     {
       [Option('s', "secret", Required = true, HelpText = "Path to the Gmail API Secrets JSON file")]
       public string SecretsFile { get; set; }
+
+      [Option('t', "telegram-api-path", HelpText = "Path to the Telegram API token file")]
+      public string TelegramApiPath { get; set; }
+
+      [Option('g', "telegram-chat-group-path", HelpText = "Path to the Telegram chat group file")]
+      public string TelegramChatGroupPath { get; set; }
 
       [Option('c', "credentials-path", HelpText = "Path to directory to store OAuth Credentials")]
       public string CredentialsPath { get; set; }
