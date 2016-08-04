@@ -19,6 +19,7 @@ namespace InternetSeparationAdapter
     private static readonly string[] Scopes = {GmailService.Scope.GmailReadonly};
     private const string ApplicationName = "Internet Separation Adapter";
 
+
     public static int Main(string[] args)
     {
       var arguments = Parser.Default.ParseArguments<Arguments>(args)
@@ -46,6 +47,7 @@ namespace InternetSeparationAdapter
 
       var service = new Gmail(arguments.SecretsFile, arguments.CredentialsPath, Scopes,
         ApplicationName, exitToken.Token);
+      var bot = new Broadcaster(0); // TODO: move this to a config file
 
       if (exitToken.IsCancellationRequested) return 1;
 
@@ -65,6 +67,7 @@ namespace InternetSeparationAdapter
           {
             Console.WriteLine($"Body: {body.Value.Value}");
           }
+          bot.SendToTelegram(message.FormattedMessage);
         }
         catch (NotImplementedException)
         {
