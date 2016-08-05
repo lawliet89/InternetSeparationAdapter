@@ -45,9 +45,17 @@ namespace InternetSeparationAdapter
       var exitToken = new CancellationTokenSource();
       Console.CancelKeyPress += (sender, cancelArgs) => { exitToken.Cancel(); };
 
-      var service = new Gmail(config.GoogleCredentials.Secrets, config.StoredGoogleCredentialsPath, Scopes,
+      var service = new Gmail(
+        config.GoogleCredentials.Secrets,
+        config.StoredGoogleCredentialsPath,
+        Scopes,
         ApplicationName, exitToken.Token);
-      var bot = new Broadcaster(config.TelegramApiToken, config.TelegramChatGroupIds, exitToken.Token);
+
+      var bot = new Broadcaster(
+        config.TelegramApiToken,
+        config.TelegramChatGroupIds,
+        cancellationToken: exitToken.Token
+      );
 
       var periodicTimespan = TimeSpan.FromSeconds(config.PollInterval);
 
