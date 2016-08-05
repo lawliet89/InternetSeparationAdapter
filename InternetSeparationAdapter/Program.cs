@@ -3,6 +3,7 @@ using System;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using MimeKit;
 using Newtonsoft.Json;
 using Nito.AsyncEx;
 
@@ -71,27 +72,23 @@ namespace InternetSeparationAdapter
     {
       var messages = await service.GetUnreadMessage(label).ConfigureAwait(false);
 
-      var messageBodies = service.FetchMessages(messages);
-      foreach (var messageLazy in messageBodies)
+      var rawMessages = service.FetchMessages(messages, UsersResource.MessagesResource.GetRequest.FormatEnum.Raw);
+      foreach (var rawLazy in rawMessages)
       {
-        var message = await messageLazy.ConfigureAwait(false);
+        var raw = await rawLazy.ConfigureAwait(false);
         if (cancellationToken.IsCancellationRequested) return;
-        Console.WriteLine($"ID: {message.Id}");
-        Console.WriteLine($"From: {message.From}");
-        Console.WriteLine($"Subject: {message.Subject}");
         try
         {
-          var body = message.Body;
-          if (body.HasValue)
-          {
-            Console.WriteLine($"Body: {body.Value.Value}");
-          }
-          await Task.WhenAll(bot.SendToTelegram(message.FormattedMessage)).ConfigureAwait(false);
+          Console.WriteLine($"ID: {raw.Id}");
+          var message = raw.ToMimeMessage();
+          Console.WriteLine(message.TextBody);
+          await Task.WhenAll(bot.SendToTelegram(Broadcaster.FormatMessage(message))).ConfigureAwait(false);
         }
-        catch (NotImplementedException)
+        catch (FormatException e)
         {
-          Console.WriteLine("Body: mutlipart/related");
+          Console.WriteLine(e);
         }
+
       }
       await Task.WhenAll(service.MarkRead(messages)).ConfigureAwait(false);
     }

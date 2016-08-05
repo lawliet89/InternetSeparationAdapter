@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -17,7 +16,7 @@ namespace InternetSeparationAdapter
   {
     private const string UnreadLabel = "UNREAD";
 
-    private static ModifyMessageRequest MarkUnreadRequest =
+    private static readonly ModifyMessageRequest MarkUnreadRequest =
       new ModifyMessageRequest {RemoveLabelIds = new[] {UnreadLabel}};
 
     private readonly CancellationToken _cancellationToken;
@@ -73,18 +72,25 @@ namespace InternetSeparationAdapter
       return execution.Messages ?? Enumerable.Empty<Google.Apis.Gmail.v1.Data.Message>().ToList();
     }
 
-    private UsersResource.MessagesResource.GetRequest MakeGetMessageRequest(string id)
+    private UsersResource.MessagesResource.GetRequest MakeGetMessageRequest(string id,
+      UsersResource.MessagesResource.GetRequest.FormatEnum format =
+        UsersResource.MessagesResource.GetRequest.FormatEnum.Full)
     {
-      return _service.Users.Messages.Get("me", id);
+      var request =  _service.Users.Messages.Get("me", id);
+      request.Format = format;
+      return request;
     }
 
-    public IEnumerable<Task<Message>> FetchMessages(IEnumerable<Google.Apis.Gmail.v1.Data.Message> messages)
+    public IEnumerable<Task<Google.Apis.Gmail.v1.Data.Message>>
+      FetchMessages(IEnumerable<Google.Apis.Gmail.v1.Data.Message> messages,
+      UsersResource.MessagesResource.GetRequest.FormatEnum format =
+        UsersResource.MessagesResource.GetRequest.FormatEnum.Full)
     {
       return messages.Select(async messageMeta =>
       {
-        var messageRequest = MakeGetMessageRequest(messageMeta.Id);
+        var messageRequest = MakeGetMessageRequest(messageMeta.Id, format);
         var message = await messageRequest.ExecuteAsync(_cancellationToken);
-        return _cancellationToken.IsCancellationRequested ? null : new Message(message);
+        return _cancellationToken.IsCancellationRequested ? null : message;
       });
     }
 
