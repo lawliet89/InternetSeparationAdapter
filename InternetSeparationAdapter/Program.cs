@@ -1,10 +1,9 @@
 ﻿using Google.Apis.Gmail.v1;
 using System;
-using System.Drawing;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using MimeKit;
 using Newtonsoft.Json;
 using Nito.AsyncEx;
 
@@ -85,17 +84,13 @@ namespace InternetSeparationAdapter
           var message = raw.ToMimeMessage();
           Console.WriteLine(message.TextBody);
 
-          var images = message.BodyParts.InlineParts().ImageParts();
+          var images = message.BodyParts.InlineParts().ImageParts()
+            .Where(image => image.ContentDisposition?.Size > minimumImageSize);
           foreach (var imagePart in images)
           {
             Console.WriteLine($"Content ID: {imagePart.ContentId} Content Location: {imagePart.ContentLocation}");
             using (var imageStream = imagePart.ContentObject.Open())
             {
-              var image = Image.FromStream(imageStream);
-              if (image.Height * image.Width < minimumImageSize) continue;
-
-              imageStream.Position = 0;
-
               await Task.WhenAll(bot.SendPhotoToTelegram(imageStream, imagePart.FileName,
                 $"{imagePart.ContentId}\n{imagePart.FileName}"));
             }
