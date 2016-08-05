@@ -96,7 +96,7 @@ namespace InternetSeparationAdapter
             }
           }
 
-          await Task.WhenAll(bot.SendToTelegram(Broadcaster.FormatMessage(message))).ConfigureAwait(false);
+          await Task.WhenAll(bot.SendMailToTelegram(message)).ConfigureAwait(false);
         }
         catch (FormatException e)
         {
