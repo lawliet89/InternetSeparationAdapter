@@ -3,7 +3,6 @@ using System;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
-using CommandLine;
 using Newtonsoft.Json;
 using Nito.AsyncEx;
 
