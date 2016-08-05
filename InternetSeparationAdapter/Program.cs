@@ -1,5 +1,6 @@
 ﻿using Google.Apis.Gmail.v1;
 using System;
+using System.Drawing;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -56,7 +57,8 @@ namespace InternetSeparationAdapter
         try
         {
           Console.WriteLine($"[{DateTime.Now.ToLongDateString()} {DateTime.Now.ToLongTimeString()}] Polling");
-          await FetchUnread(service, bot, config.Label, exitToken.Token).ConfigureAwait(false);
+          await FetchUnread(service, bot, config.Label, exitToken.Token, config.MinimumImageSize)
+            .ConfigureAwait(false);
           await Task.Delay(periodicTimespan, exitToken.Token).ConfigureAwait(false);
         }
         catch (TaskCanceledException)
@@ -68,7 +70,7 @@ namespace InternetSeparationAdapter
     }
 
     private static async Task FetchUnread(Gmail service, Broadcaster bot,
-      string label, CancellationToken cancellationToken)
+      string label, CancellationToken cancellationToken, int minimumImageSize)
     {
       var messages = await service.GetUnreadMessage(label).ConfigureAwait(false);
 
@@ -84,12 +86,18 @@ namespace InternetSeparationAdapter
           Console.WriteLine(message.TextBody);
 
           var images = message.BodyParts.InlineParts().ImageParts();
-          foreach (var image in images)
+          foreach (var imagePart in images)
           {
-            Console.WriteLine($"Content ID: {image.ContentId} Content Location: {image.ContentLocation}");
-            using (var imageStream = image.ContentObject.Open())
+            Console.WriteLine($"Content ID: {imagePart.ContentId} Content Location: {imagePart.ContentLocation}");
+            using (var imageStream = imagePart.ContentObject.Open())
             {
-              await Task.WhenAll(bot.SendPhotoToTelegram(imageStream, image.FileName, image.ContentId));
+              var image = Image.FromStream(imageStream);
+              if (image.Height * image.Width < minimumImageSize) continue;
+
+              imageStream.Position = 0;
+
+              await Task.WhenAll(bot.SendPhotoToTelegram(imageStream, imagePart.FileName,
+                $"{imagePart.ContentId}\n{imagePart.FileName}"));
             }
           }
 

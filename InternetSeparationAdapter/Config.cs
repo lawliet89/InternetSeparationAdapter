@@ -22,6 +22,10 @@ namespace InternetSeparationAdapter
     [JsonProperty(DefaultValueHandling = DefaultValueHandling.Populate)]
     public int PollInterval { get; set; }
 
+    [DefaultValue(40000)]
+    [JsonProperty(DefaultValueHandling = DefaultValueHandling.Populate)]
+    public int MinimumImageSize { get; set; }
+
     public static string DefaultCredentialsPath
     {
       get
