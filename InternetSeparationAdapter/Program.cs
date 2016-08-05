@@ -3,6 +3,7 @@ using System;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using MimeKit;
 using Newtonsoft.Json;
 using Nito.AsyncEx;
 
@@ -46,7 +47,7 @@ namespace InternetSeparationAdapter
 
       var service = new Gmail(config.GoogleCredentials.Secrets, config.StoredGoogleCredentialsPath, Scopes,
         ApplicationName, exitToken.Token);
-      var bot = new Broadcaster(config.TelegramApiToken, config.TelegramChatGroupIds);
+      var bot = new Broadcaster(config.TelegramApiToken, config.TelegramChatGroupIds, exitToken.Token);
 
       var periodicTimespan = TimeSpan.FromSeconds(config.PollInterval);
 
@@ -85,7 +86,11 @@ namespace InternetSeparationAdapter
           var images = message.BodyParts.InlineParts().ImageParts();
           foreach (var image in images)
           {
-            Console.WriteLine(image.ContentId);
+            Console.WriteLine($"Content ID: {image.ContentId} Content Location: {image.ContentLocation}");
+            using (var imageStream = image.ContentObject.Open())
+            {
+              await Task.WhenAll(bot.SendPhotoToTelegram(imageStream, image.FileName, image.ContentId));
+            }
           }
 
           await Task.WhenAll(bot.SendToTelegram(Broadcaster.FormatMessage(message))).ConfigureAwait(false);

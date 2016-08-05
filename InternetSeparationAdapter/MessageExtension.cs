@@ -26,9 +26,9 @@ namespace InternetSeparationAdapter
       return parts.Where(part => part.ContentDisposition?.Disposition == ContentDisposition.Inline);
     }
 
-    public static IEnumerable<MimeEntity> ImageParts(this IEnumerable<MimeEntity> parts)
+    public static IEnumerable<MimePart> ImageParts(this IEnumerable<MimeEntity> parts)
     {
-      return parts.Where(part => part.ContentType.MediaType == "image");
+      return parts.Where(part => part.ContentType.MediaType == "image").OfType<MimePart>();
     }
   }
 }
