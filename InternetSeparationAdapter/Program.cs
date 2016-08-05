@@ -3,7 +3,6 @@ using System;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
-using MimeKit;
 using Newtonsoft.Json;
 using Nito.AsyncEx;
 
@@ -82,6 +81,13 @@ namespace InternetSeparationAdapter
           Console.WriteLine($"ID: {raw.Id}");
           var message = raw.ToMimeMessage();
           Console.WriteLine(message.TextBody);
+
+          var images = message.BodyParts.InlineParts().ImageParts();
+          foreach (var image in images)
+          {
+            Console.WriteLine(image.ContentId);
+          }
+
           await Task.WhenAll(bot.SendToTelegram(Broadcaster.FormatMessage(message))).ConfigureAwait(false);
         }
         catch (FormatException e)

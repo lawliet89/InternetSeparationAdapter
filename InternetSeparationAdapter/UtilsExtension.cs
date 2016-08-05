@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using MimeKit;
 
 namespace InternetSeparationAdapter
@@ -35,19 +37,6 @@ namespace InternetSeparationAdapter
           throw new FormatException("Illegal base64url string!");
       }
       return Convert.FromBase64String(s); // Standard base64 decoder
-    }
-
-    public static MimeMessage ToMimeMessage(this Google.Apis.Gmail.v1.Data.Message message)
-    {
-      if (message.Raw == null)
-        throw new ArgumentException("Gmail message is missing raw body. You need to fetch it with raw format");
-      var raw = message.Raw.Base64UrlDecode();
-      MimeMessage result;
-      using (var stream = new MemoryStream(raw))
-      {
-        result = MimeMessage.Load(stream);
-      }
-      return result;
     }
   }
 }
