@@ -1,8 +1,0 @@
-version: "2"
-services:
-  ias:
-    build: .
-    restart: always
-    volumes:
-      - ./config:/usr/src/app/build/config
-      - ~/.credentials/internet-separation-adapter.json:/root/.credentials/internet-separation-adapter.json
