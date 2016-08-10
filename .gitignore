@@ -47,4 +47,4 @@ packages/
 .idea.InternetSeparationAdapter/
 InternetSeparationAdapter/bin/
 InternetSeparationAdapter/obj/
-config.json
+config/
