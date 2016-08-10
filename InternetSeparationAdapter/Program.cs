@@ -91,6 +91,7 @@ namespace InternetSeparationAdapter
           Console.WriteLine($"ID: {raw.Id}");
           var message = raw.ToMimeMessage();
           Console.WriteLine(message.TextBody);
+          await Task.WhenAll(bot.SendMailToTelegram(message)).ConfigureAwait(false);
 
           var images = message.BodyParts.InlineParts().ImageParts()
             .Where(image => image.ContentDisposition?.Size > minimumImageSize);
@@ -103,8 +104,6 @@ namespace InternetSeparationAdapter
                 $"{imagePart.ContentId}\n{imagePart.FileName}"));
             }
           }
-
-          await Task.WhenAll(bot.SendMailToTelegram(message)).ConfigureAwait(false);
         }
         catch (FormatException e)
         {
