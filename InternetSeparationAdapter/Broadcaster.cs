@@ -30,7 +30,8 @@ namespace InternetSeparationAdapter
     public async Task<IEnumerable<Message[]>> SendMailToTelegram(MimeMessage message)
     {
       var messages = new List<Message[]>();
-      using (var blocks = FormatMessage(message).GetEnumerator())
+      var formattedMessage = FormatMessage(message);
+      using (var blocks = SplitMessage(formattedMessage).GetEnumerator())
       {
         var counter = 0;
 
@@ -80,11 +81,10 @@ namespace InternetSeparationAdapter
         cancellationToken: _cancellationToken));
     }
 
-    public static IEnumerable<string> FormatMessage(MimeMessage message)
+    public static string FormatMessage(MimeMessage message)
     {
       var from = string.Join("; ", message.From.Select(sender => sender.ToString()));
-      var fullMessage = $"{from}\n{message.Subject}\n{message.TextBody}";
-      return SplitMessage(fullMessage);
+      return $"{from}\n{message.Subject}\n{message.TextBody}";
     }
 
     private static IEnumerable<string> SplitMessage(string fullMessage, int maxLength = 4000)
