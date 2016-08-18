@@ -8,7 +8,7 @@ A utility to fetch email messages from Gmail and send it to Telegram via a bot.
  - [Telegram Bot API Key](https://core.telegram.org/bots/api)
 
 ## Configuration
-A configuration file should be in `JSON` format. The format should adhere to the `Config` class in the soruce code.
+A configuration file should be in `JSON` format. The format should adhere to the `Config` class in the source code.
 
 ### Example
 ```json
