@@ -1,8 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using MimeKit;
+using System.Text.RegularExpressions;
 
 namespace InternetSeparationAdapter
 {
@@ -37,6 +34,13 @@ namespace InternetSeparationAdapter
           throw new FormatException("Illegal base64url string!");
       }
       return Convert.FromBase64String(s); // Standard base64 decoder
+    }
+
+    public static string StripSuccessiveNewLines(this string input)
+    {
+      const string pattern = @"(\r\n|\n|\n\r){2,}";
+      var regex = new Regex(pattern);
+      return regex.Replace(input, "\n\n");
     }
   }
 }
