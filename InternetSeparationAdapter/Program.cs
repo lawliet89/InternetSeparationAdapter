@@ -19,7 +19,6 @@ namespace InternetSeparationAdapter
 
     private const string ApplicationName = "Internet Separation Adapter";
 
-
     public static int Main(string[] args)
     {
       if (args.Length < 1)

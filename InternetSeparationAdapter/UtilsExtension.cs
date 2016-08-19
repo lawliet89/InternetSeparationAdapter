@@ -1,8 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using MimeKit;
+using System.Text;
 
 namespace InternetSeparationAdapter
 {
@@ -34,7 +31,7 @@ namespace InternetSeparationAdapter
           s += "=";
           break; // One pad char
         default:
-          throw new FormatException("Illegal base64url string!");
+          throw new InvalidOperationException("This code should never be executed");
       }
       return Convert.FromBase64String(s); // Standard base64 decoder
     }
