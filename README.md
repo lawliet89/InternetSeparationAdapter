@@ -1,4 +1,4 @@
-# InternetSeparationAdapter
+# InternetSeparationAdapter ![Build Status](https://api.travis-ci.org/lawliet89/InternetSeparationAdapter.svg)
 
 A utility to fetch email messages from Gmail and send it to Telegram via a bot.
 
