@@ -111,6 +111,34 @@ namespace InternetSeparationAdapter
                 $"{imagePart.ContentId}\n{imagePart.FileName}"));
             }
           }
+
+          var attachments = message.BodyParts.AttachmentParts();
+          var imageAttachments = attachments.ImageParts();
+          foreach (var imageAttachment in imageAttachments)
+          {
+            Console.WriteLine(
+              $"Content ID: {imageAttachment.ContentId} Content Location: {imageAttachment.ContentLocation}"
+            );
+            using (var imageStream = imageAttachment.ContentObject.Open())
+            {
+              await Task.WhenAll(bot.SendPhotoToTelegram(imageStream, imageAttachment.FileName,
+                $"{imageAttachment.ContentId}\n{imageAttachment.FileName}"));
+            }
+          }
+
+          var fileAttachments = attachments.Except(imageAttachments);
+          foreach (var fileAttachment in fileAttachments)
+          {
+            Console.WriteLine(
+              $"Content ID: {fileAttachment.ContentId} Content Location: {fileAttachment.ContentLocation}"
+            );
+            using (var fileStream = fileAttachment.ContentObject.Open())
+            {
+              await Task.WhenAll(bot.SendFileToTelegram(fileStream, fileAttachment.FileName,
+                $"{fileAttachment.ContentId}\n{fileAttachment.FileName}"));
+            }
+          }
+
         }
         catch (FormatException e)
         {
