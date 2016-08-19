@@ -87,7 +87,7 @@ namespace InternetSeparationAdapter
       return SplitMessage(fullMessage);
     }
 
-    private static IEnumerable<string> SplitMessage(string fullMessage, int maxLength = 4000)
+    public static IEnumerable<string> SplitMessage(string fullMessage, int maxLength = 4000)
     {
       var index = 0;
       while (index < fullMessage.Length)

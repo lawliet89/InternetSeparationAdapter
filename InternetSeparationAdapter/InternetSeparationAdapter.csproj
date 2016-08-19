@@ -103,6 +103,7 @@
     <Compile Include="MessageExtension.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Tests\BroadcasterTests.cs" />
     <Compile Include="Tests\UtilsExtensionTest.cs" />
     <Compile Include="UtilsExtension.cs" />
   </ItemGroup>
