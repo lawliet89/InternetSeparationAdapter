@@ -112,8 +112,8 @@ namespace InternetSeparationAdapter
             }
           }
 
-          var attachments = message.BodyParts.AttachmentParts();
-          var imageAttachments = attachments.ImageParts();
+          var attachments = message.BodyParts.AttachmentParts().ToList();
+          var imageAttachments = attachments.ImageParts().ToList();
           foreach (var imageAttachment in imageAttachments)
           {
             Console.WriteLine(
@@ -138,7 +138,6 @@ namespace InternetSeparationAdapter
                 $"{fileAttachment.ContentId}\n{fileAttachment.FileName}"));
             }
           }
-
         }
         catch (FormatException e)
         {
