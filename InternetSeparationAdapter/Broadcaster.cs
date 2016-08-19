@@ -83,7 +83,7 @@ namespace InternetSeparationAdapter
     public static IEnumerable<string> FormatMessage(MimeMessage message)
     {
       var from = string.Join("; ", message.From.Select(sender => sender.ToString()));
-      var fullMessage = $"{from}\n{message.Subject}\n{message.TextBody}";
+      var fullMessage = $"{from}\n{message.Subject}\n{message.TextBody.StripSuccessiveNewLines()}";
       return SplitMessage(fullMessage);
     }
 
