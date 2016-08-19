@@ -21,16 +21,15 @@ namespace InternetSeparationAdapter
 
     private readonly CancellationToken _cancellationToken;
     private readonly GmailService _service;
-    private readonly IConfigurableHttpClientInitializer _credentials;
 
     // TODO: Don't block on getting credentials -- make it an async method call for the user
     public Gmail(ClientSecrets secret, string credentialsPath, IEnumerable<string> scopes, string applicationName,
       CancellationToken cancellationToken = default(CancellationToken))
     {
-      _credentials = GetCredentials(secret, scopes, credentialsPath, cancellationToken).Result;
+      var credentials = GetCredentials(secret, scopes, credentialsPath, cancellationToken).Result;
       _cancellationToken = cancellationToken;
       if (cancellationToken.IsCancellationRequested) throw new OperationCanceledException();
-      _service = GetGmailService(_credentials, applicationName);
+      _service = GetGmailService(credentials, applicationName);
     }
 
     private static Task<UserCredential> GetCredentials(ClientSecrets secret,

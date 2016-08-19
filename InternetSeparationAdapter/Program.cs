@@ -26,9 +26,17 @@ namespace InternetSeparationAdapter
         Console.Write("Usage: InternetSeparationAdapter.exe path/to/config,json");
         return 1;
       }
+
       var configPath = args[0];
-      var configStream = GetConfigStream(configPath);
-      var json = new StreamReader(configStream).ReadToEnd();
+      string json;
+      using (var configStream = GetConfigStream(configPath))
+      {
+        using (var reader = new StreamReader(configStream))
+        {
+          json = reader.ReadToEnd();
+        }
+      }
+
       var config = InitializeConfig(json);
       return config == null ? 1 : AsyncContext.Run(() => AsyncMain(config));
     }
