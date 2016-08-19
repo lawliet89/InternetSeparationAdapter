@@ -1,0 +1,8 @@
+language: csharp
+solution: InternetSeparationAdapter.sln
+mono:
+  - latest
+  - 4.4.2
+script:
+  - xbuild InternetSeparationAdapter.sln /property:OutDir=build/
+  - mono packages/NUnit.ConsoleRunner.3.4.1/tools/nunit3-console.exe InternetSeparationAdapter/build/InternetSeparationAdapter.exe
