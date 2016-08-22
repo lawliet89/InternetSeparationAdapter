@@ -38,6 +38,7 @@ namespace InternetSeparationAdapter
 
     public static string StripSuccessiveNewLines(this string input)
     {
+      if (string.IsNullOrEmpty(input)) return input;
       const string pattern = @"(\r\n|\n|\n\r){2,}";
       var regex = new Regex(pattern);
       return regex.Replace(input, "\n\n");
