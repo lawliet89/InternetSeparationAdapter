@@ -30,5 +30,10 @@ namespace InternetSeparationAdapter
     {
       return parts.Where(part => part.ContentType.MediaType == "image").OfType<MimePart>();
     }
+
+    public static IEnumerable<MimePart> AttachmentParts(this IEnumerable<MimeEntity> parts)
+    {
+      return parts.Where(part => part.IsAttachment).OfType<MimePart>();
+    }
   }
 }
