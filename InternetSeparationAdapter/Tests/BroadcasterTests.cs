@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using NUnit.Framework;
 
 namespace InternetSeparationAdapter.Tests
@@ -9,7 +10,7 @@ namespace InternetSeparationAdapter.Tests
     [Test]
     public static void SplitMessageSplitsTextCorrectly()
     {
-      const int partLength = 4000;
+      const int partLength = 2000;
       var fixture = Fixtures.MobyDick.Text;
       var actual = Broadcaster.SplitMessage(fixture, partLength).ToList();
       Assert.That(actual, Is.EqualTo(Fixtures.MobyDick.Parts));
