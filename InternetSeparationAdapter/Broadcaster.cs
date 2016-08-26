@@ -87,14 +87,57 @@ namespace InternetSeparationAdapter
       return SplitMessage(fullMessage);
     }
 
-    public static IEnumerable<string> SplitMessage(string fullMessage, int maxLength = 4000)
+    public static IEnumerable<string> SplitMessage(string fullMessage, int maxLength = 4000, double threshold = 0.1)
     {
-      var index = 0;
-      while (index < fullMessage.Length)
+      var delimiters = new[]
       {
-        yield return fullMessage.Substring(index, Math.Min(maxLength, fullMessage.Length - index));
-        index += maxLength;
+        new[] { "\n\n", "\n" },
+        new[] { ". ", ";" },
+        new[] { " " }
+      };
+
+      var startIndex = 0;
+      var fullLength = fullMessage.Length;
+      var thresholdLength = Convert.ToInt32(maxLength * (1 - threshold));
+
+      while (startIndex < fullLength)
+      {
+        var endIndex = Math.Min(startIndex + maxLength, fullLength); // non-inclusive end index
+        if (endIndex != fullLength)
+        {
+          foreach (var delimiterSet in delimiters)
+          {
+            var foundIndex = FindEndIndex(fullMessage, delimiterSet, startIndex, endIndex, thresholdLength);
+            if (foundIndex == -1) continue;
+            endIndex = foundIndex;
+            break;
+          }
+        }
+        yield return fullMessage.Substring(startIndex, endIndex - startIndex).Trim();
+        startIndex = endIndex;
       }
+    }
+
+    private static int FindEndIndex(string fullMessage, IList<string> delimiterSet, int startIndex,
+      int endIndex, int thresholdLength)
+    {
+      if (delimiterSet.Count == 0)
+        throw new ArgumentException("A delimiter set cannot be empty", nameof(delimiterSet));
+
+      var delimterLength = delimiterSet.Select(delim => delim.Length).Max();
+      var substring = DelimiterTestSubstring(fullMessage, endIndex, delimterLength);
+      while (!delimiterSet.Select(delim => substring.Contains(delim)).Any(contains => contains))
+      {
+        if (endIndex - startIndex < thresholdLength) return -1;
+        endIndex -= delimterLength;
+        substring = DelimiterTestSubstring(fullMessage, endIndex, delimterLength);
+      }
+      return endIndex;
+    }
+
+    private static string DelimiterTestSubstring(string str, int index, int length)
+    {
+      return str.Substring(index - length, length * 2);
     }
   }
 }
