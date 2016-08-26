@@ -24,6 +24,7 @@ namespace InternetSeparationAdapter.Tests
       };
 
       var actual = Broadcaster.SplitMessage(TestInput, 200).ToList();
+      Assert.That(actual, Is.EqualTo(expected));
       var joined = string.Join(" ", actual);
       Assert.That(joined, Is.EqualTo(TestInput));
     }
