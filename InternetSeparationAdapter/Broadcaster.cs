@@ -89,11 +89,18 @@ namespace InternetSeparationAdapter
 
     public static IEnumerable<string> SplitMessage(string fullMessage, int maxLength = 4000)
     {
-      var index = 0;
-      while (index < fullMessage.Length)
+      var startIndex = 0;
+      var fullLength = fullMessage.Length;
+      var delimiter = ' ';
+      while (startIndex < fullLength)
       {
-        yield return fullMessage.Substring(index, Math.Min(maxLength, fullMessage.Length - index));
-        index += maxLength;
+        var endIndex = Math.Min(startIndex + maxLength, fullLength); // non-inclusive end index
+        while (endIndex != fullLength && fullMessage[endIndex - 1] != delimiter && fullMessage[endIndex] != delimiter)
+        {
+          endIndex--;
+        }
+        yield return fullMessage.Substring(startIndex, endIndex - startIndex).Trim();
+        startIndex = endIndex;
       }
     }
   }
